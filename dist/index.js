@@ -31947,7 +31947,7 @@ async function run() {
               // Not an organization, switch to user mode
               core.info(`${owner} is not an organization, trying as a user...`);
               isOrganization = false;
-              page = startPage; // Reset page counter
+              page = 1; // Start from page 1 for user mode
               
               core.info(`Fetching page ${page} (${repositories.length} repos so far)...`);
               response = await octokit.rest.repos.listForUser({
@@ -31976,7 +31976,7 @@ async function run() {
           hasMorePages = false;
         } else {
           // Add repositories, respecting max-repos limit
-          const remainingSlots = maxRepos === 0 ? response.data.length : maxRepos - repositories.length;
+          const remainingSlots = maxRepos === 0 ? response.data.length : Math.min(response.data.length, maxRepos - repositories.length);
           const reposToAdd = response.data.slice(0, remainingSlots);
           repositories.push(...reposToAdd);
           
@@ -31993,7 +31993,7 @@ async function run() {
           }
         }
       } catch (error) {
-        // If we encounter an error after successfully fetching some repos, log it and continue
+        // If we encounter an error, log it and terminate
         core.error(`Error fetching page ${page}: ${error.message}`);
         throw error;
       }
