@@ -31837,12 +31837,68 @@ var __webpack_exports__ = {};
 const core = __nccwpck_require__(7484);
 const github = __nccwpck_require__(3228);
 
+// Format repositories based on the specified format
+function formatRepositories(repositories, format) {
+  const repoData = repositories.map(repo => ({
+    name: repo.name,
+    full_name: repo.full_name
+  }));
+
+  switch (format.toLowerCase()) {
+    case 'json':
+      return JSON.stringify(repoData);
+    
+    case 'flat':
+      return repoData.map(repo => repo.full_name).join('\n');
+    
+    case 'array':
+      return JSON.stringify(repoData.map(repo => repo.full_name));
+    
+    case 'csv':
+      const csvHeader = 'name,full_name';
+      const csvRows = repoData.map(repo => `${repo.name},${repo.full_name}`);
+      return [csvHeader, ...csvRows].join('\n');
+    
+    default:
+      return JSON.stringify(repoData);
+  }
+}
+
+// Filter repositories based on visibility and fork settings
+function filterRepositories(repositories, visibility, includeForks) {
+  let filtered = repositories;
+
+  // Filter by visibility
+  if (visibility && visibility !== 'all') {
+    filtered = filtered.filter(repo => {
+      if (visibility === 'public') return !repo.private;
+      if (visibility === 'private') return repo.private;
+      if (visibility === 'internal') return repo.visibility === 'internal';
+      return true;
+    });
+  }
+
+  // Filter by fork status
+  if (includeForks !== 'true') {
+    if (includeForks === 'false') {
+      filtered = filtered.filter(repo => !repo.fork);
+    } else if (includeForks === 'only') {
+      filtered = filtered.filter(repo => repo.fork);
+    }
+  }
+
+  return filtered;
+}
+
 async function run() {
   try {
     // Get inputs
     const owner = core.getInput('owner', { required: true });
     const token = core.getInput('token', { required: true });
     const branchName = core.getInput('branch-name');
+    const outputFormat = core.getInput('output-format') || 'json';
+    const visibility = core.getInput('visibility') || 'all';
+    const includeForks = core.getInput('include-forks') || 'true';
 
     // Create GitHub client
     const octokit = github.getOctokit(token);
@@ -31895,8 +31951,12 @@ async function run() {
 
     core.info(`Found ${repositories.length} repositories`);
 
+    // Apply filters
+    const filteredRepositories = filterRepositories(repositories, visibility, includeForks);
+    core.info(`After filtering: ${filteredRepositories.length} repositories (visibility: ${visibility}, include-forks: ${includeForks})`);
+
     // Create a simplified list of repositories
-    const repoList = repositories.map(repo => ({
+    const repoList = filteredRepositories.map(repo => ({
       name: repo.name,
       full_name: repo.full_name,
       url: repo.html_url,
@@ -31904,8 +31964,10 @@ async function run() {
       private: repo.private
     }));
 
-    // Set output for all repositories
-    core.setOutput('repositories', JSON.stringify(repoList));
+    // Format and set output for all repositories
+    const formattedRepos = formatRepositories(filteredRepositories, outputFormat);
+    core.setOutput('repositories', formattedRepos);
+    core.setOutput('repository-count', filteredRepositories.length);
 
     // If branch name is specified, search for it
     if (branchName) {
@@ -31913,7 +31975,7 @@ async function run() {
       
       const repositoriesWithBranch = [];
 
-      for (const repo of repositories) {
+      for (const repo of filteredRepositories) {
         try {
           // Try to get the specific branch
           await octokit.rest.repos.getBranch({
@@ -31942,7 +32004,11 @@ async function run() {
       }
 
       core.info(`\nFound ${repositoriesWithBranch.length} repositories with branch '${branchName}'`);
-      core.setOutput('repositories-with-branch', JSON.stringify(repositoriesWithBranch));
+      
+      // Format and set output for repositories with branch
+      const formattedReposWithBranch = formatRepositories(repositoriesWithBranch, outputFormat);
+      core.setOutput('repositories-with-branch', formattedReposWithBranch);
+      core.setOutput('repositories-with-branch-count', repositoriesWithBranch.length);
 
       // Create a summary
       if (repositoriesWithBranch.length > 0) {
