@@ -31856,7 +31856,18 @@ function formatRepositories(repositories, format) {
     
     case 'csv':
       const csvHeader = 'name,full_name';
-      const csvRows = repoData.map(repo => `${repo.name},${repo.full_name}`);
+      const csvRows = repoData.map(repo => {
+        // Escape CSV values that contain commas, quotes, or newlines
+        const escapeCsv = (value) => {
+          if (!value) return '';
+          const stringValue = String(value);
+          if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+            return `"${stringValue.replace(/"/g, '""')}"`;
+          }
+          return stringValue;
+        };
+        return `${escapeCsv(repo.name)},${escapeCsv(repo.full_name)}`;
+      });
       return [csvHeader, ...csvRows].join('\n');
     
     default:
