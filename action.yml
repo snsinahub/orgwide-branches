@@ -17,12 +17,28 @@ inputs:
     description: 'Optional: Branch name to search for across all repositories'
     required: false
     default: ''
+  output-format:
+    description: 'Output format: json, flat, array, or csv'
+    required: false
+    default: 'json'
+  visibility:
+    description: 'Filter by repository visibility: all, public, private, or internal'
+    required: false
+    default: 'all'
+  include-forks:
+    description: 'Include forked repositories: true, false, or only'
+    required: false
+    default: 'true'
 
 outputs:
   repositories:
-    description: 'JSON array of all repositories found'
+    description: 'Repositories in the specified format (json, flat, array, or csv)'
   repositories-with-branch:
-    description: 'JSON array of repositories containing the specified branch (if branch-name is provided)'
+    description: 'Repositories with branch in the specified format (if branch-name is provided)'
+  repository-count:
+    description: 'Total count of repositories found'
+  repositories-with-branch-count:
+    description: 'Count of repositories containing the specified branch (if branch-name is provided)'
 
 runs:
   using: 'node20'
