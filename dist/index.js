@@ -31911,7 +31911,7 @@ async function run() {
     const outputFormat = core.getInput('output-format') || 'json';
     const visibility = core.getInput('visibility') || 'all';
     const includeForks = core.getInput('include-forks') || 'true';
-    const maxRepos = parseInt(core.getInput('max-repos') || '1000', 10);
+    const maxRepos = parseInt(core.getInput('max-repos') || '5000', 10);
     const startPage = parseInt(core.getInput('page') || '1', 10);
     const perPage = Math.min(parseInt(core.getInput('per-page') || '100', 10), 100);
 
