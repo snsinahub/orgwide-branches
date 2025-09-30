@@ -75,53 +75,91 @@ async function run() {
     const outputFormat = core.getInput('output-format') || 'json';
     const visibility = core.getInput('visibility') || 'all';
     const includeForks = core.getInput('include-forks') || 'true';
+    const maxRepos = parseInt(core.getInput('max-repos') || '1000', 10);
+    const startPage = parseInt(core.getInput('page') || '1', 10);
+    const perPage = Math.min(parseInt(core.getInput('per-page') || '100', 10), 100);
 
     // Create GitHub client
     const octokit = github.getOctokit(token);
 
     core.info(`Fetching repositories for owner: ${owner}`);
+    core.info(`Max repos limit: ${maxRepos === 0 ? 'unlimited' : maxRepos}`);
+    core.info(`Starting from page: ${startPage}, per page: ${perPage}`);
 
     // Get all repositories for the owner
     const repositories = [];
-    let page = 1;
+    let page = startPage;
     let hasMorePages = true;
+    let isOrganization = true;
 
-    while (hasMorePages) {
+    while (hasMorePages && (maxRepos === 0 || repositories.length < maxRepos)) {
       try {
-        // Try as an organization first
-        const response = await octokit.rest.repos.listForOrg({
-          org: owner,
-          per_page: 100,
-          page: page,
-          type: 'all'
-        });
-
-        repositories.push(...response.data);
-        hasMorePages = response.data.length === 100;
-        page++;
-      } catch (error) {
-        if (error.status === 404) {
-          // Not an organization, try as a user
-          core.info(`${owner} is not an organization, trying as a user...`);
-          page = 1;
-          hasMorePages = true;
-
-          while (hasMorePages) {
-            const response = await octokit.rest.repos.listForUser({
-              username: owner,
-              per_page: 100,
+        let response;
+        
+        // Try as an organization first (only on first iteration)
+        if (isOrganization) {
+          try {
+            core.info(`Fetching page ${page} (${repositories.length} repos so far)...`);
+            response = await octokit.rest.repos.listForOrg({
+              org: owner,
+              per_page: perPage,
               page: page,
               type: 'all'
             });
+          } catch (error) {
+            if (error.status === 404) {
+              // Not an organization, switch to user mode
+              core.info(`${owner} is not an organization, trying as a user...`);
+              isOrganization = false;
+              page = startPage; // Reset page counter
+              
+              core.info(`Fetching page ${page} (${repositories.length} repos so far)...`);
+              response = await octokit.rest.repos.listForUser({
+                username: owner,
+                per_page: perPage,
+                page: page,
+                type: 'all'
+              });
+            } else {
+              throw error;
+            }
+          }
+        } else {
+          // Already determined it's a user
+          core.info(`Fetching page ${page} (${repositories.length} repos so far)...`);
+          response = await octokit.rest.repos.listForUser({
+            username: owner,
+            per_page: perPage,
+            page: page,
+            type: 'all'
+          });
+        }
 
-            repositories.push(...response.data);
-            hasMorePages = response.data.length === 100;
+        if (response.data.length === 0) {
+          // No more repositories
+          hasMorePages = false;
+        } else {
+          // Add repositories, respecting max-repos limit
+          const remainingSlots = maxRepos === 0 ? response.data.length : maxRepos - repositories.length;
+          const reposToAdd = response.data.slice(0, remainingSlots);
+          repositories.push(...reposToAdd);
+          
+          // Check if we should continue
+          if (response.data.length < perPage) {
+            // Received fewer repos than requested, likely the last page
+            hasMorePages = false;
+          } else if (maxRepos > 0 && repositories.length >= maxRepos) {
+            // Reached the max repos limit
+            core.info(`Reached max repos limit of ${maxRepos}`);
+            hasMorePages = false;
+          } else {
             page++;
           }
-          break;
-        } else {
-          throw error;
         }
+      } catch (error) {
+        // If we encounter an error after successfully fetching some repos, log it and continue
+        core.error(`Error fetching page ${page}: ${error.message}`);
+        throw error;
       }
     }
 

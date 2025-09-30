@@ -182,6 +182,9 @@ jobs:
 | `output-format` | Output format: `json`, `flat`, `array`, or `csv` | No | `json` |
 | `visibility` | Filter by repository visibility: `all`, `public`, `private`, or `internal` | No | `all` |
 | `include-forks` | Include forked repositories: `true`, `false`, or `only` | No | `true` |
+| `max-repos` | Maximum number of repositories to fetch (set to `0` for unlimited) | No | `1000` |
+| `page` | Page number to start fetching from (for pagination control) | No | `1` |
+| `per-page` | Number of repositories per page (max: 100) | No | `100` |
 
 ## Outputs
 
@@ -392,6 +395,43 @@ jobs:
           echo "${{ steps.originals.outputs.repositories }}"
 ```
 
+### Example 7: Fetch repositories with pagination control
+
+For organizations with many repositories, you can control pagination:
+
+```yaml
+name: Fetch Large Organization Repos
+on:
+  workflow_dispatch:
+
+jobs:
+  fetch-repos:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch first 1000 repositories
+        uses: snsinahub/orgwide-branches@v1
+        with:
+          owner: 'large-organization'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          max-repos: 1000
+      
+      - name: Fetch all repositories (unlimited)
+        uses: snsinahub/orgwide-branches@v1
+        with:
+          owner: 'large-organization'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          max-repos: 0
+      
+      - name: Fetch specific page range
+        uses: snsinahub/orgwide-branches@v1
+        with:
+          owner: 'large-organization'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          page: 11
+          per-page: 100
+          max-repos: 500
+```
+
 ## Output Format
 
 The action supports multiple output formats to suit different use cases:
@@ -452,6 +492,40 @@ repo-name-3,owner/repo-name-3
 - `true` (default): Include all repositories, including forks
 - `false`: Exclude forked repositories
 - `only`: Only include forked repositories
+
+## Pagination Control
+
+For organizations with many repositories, you can control how repositories are fetched:
+
+### max-repos
+
+Limits the total number of repositories to fetch. Default is `1000`, which is sufficient for most organizations. Set to `0` for unlimited repositories.
+
+```yaml
+with:
+  max-repos: 1000  # Fetch up to 1000 repositories
+  max-repos: 0     # Fetch all repositories (unlimited)
+```
+
+### page and per-page
+
+Control which page to start fetching from and how many repositories per page:
+
+```yaml
+with:
+  page: 1          # Start from page 1 (default)
+  per-page: 100    # Fetch 100 repositories per page (max and default)
+```
+
+These parameters are useful for:
+- **Large organizations**: Process repositories in batches to avoid timeouts
+- **Specific subsets**: Fetch a specific range of repositories
+- **Performance optimization**: Adjust page size for better performance
+
+**Example use case**: For an organization with 2500 repositories, you could fetch them in batches:
+- First batch: `page: 1`, `max-repos: 1000`
+- Second batch: `page: 11`, `max-repos: 1000` (starts from repo 1001)
+- Third batch: `page: 21`, `max-repos: 500` (fetches remaining 500 repos)
 
 ## Legacy Output Format
 
