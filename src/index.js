@@ -226,6 +226,7 @@ async function run() {
       core.setOutput('repositories-with-branch-count', repositoriesWithBranch.length);
       
       // When branch-name is provided, the main repositories output should also be filtered to only repos with the branch
+      // This maintains both outputs for backward compatibility, but both now contain the same filtered data
       core.setOutput('repositories', formattedReposWithBranch);
       core.setOutput('repository-count', repositoriesWithBranch.length);
 
