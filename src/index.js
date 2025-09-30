@@ -92,7 +92,7 @@ async function run() {
             name: repo.name,
             full_name: repo.full_name,
             url: repo.html_url,
-            branch_url: `${repo.html_url}/tree/${branchName}`
+            branch_url: `${repo.html_url}/tree/${encodeURIComponent(branchName)}`
           });
         } catch (error) {
           if (error.status === 404) {
