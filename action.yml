@@ -30,7 +30,7 @@ inputs:
     required: false
     default: 'true'
   max-repos:
-    description: 'Maximum number of repositories to fetch (default: 1000, set to 0 for unlimited)'
+    description: 'Maximum number of repositories to fetch (hard limit: 1000, default: 1000)'
     required: false
     default: '1000'
   page:

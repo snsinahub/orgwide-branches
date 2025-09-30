@@ -75,15 +75,21 @@ async function run() {
     const outputFormat = core.getInput('output-format') || 'json';
     const visibility = core.getInput('visibility') || 'all';
     const includeForks = core.getInput('include-forks') || 'true';
-    const maxRepos = parseInt(core.getInput('max-repos') || '1000', 10);
+    let maxRepos = parseInt(core.getInput('max-repos') || '1000', 10);
     const startPage = parseInt(core.getInput('page') || '1', 10);
     const perPage = Math.min(parseInt(core.getInput('per-page') || '100', 10), 100);
+    
+    // Enforce hard limit of 1000 repos
+    if (maxRepos <= 0 || maxRepos > 1000) {
+      core.warning(`max-repos value of ${maxRepos} is invalid. Enforcing hard limit of 1000 repositories.`);
+      maxRepos = 1000;
+    }
 
     // Create GitHub client
     const octokit = github.getOctokit(token);
 
     core.info(`Fetching repositories for owner: ${owner}`);
-    core.info(`Max repos limit: ${maxRepos === 0 ? 'unlimited' : maxRepos}`);
+    core.info(`Max repos limit: ${maxRepos} (hard limit enforced)`);
     core.info(`Starting from page: ${startPage}, per page: ${perPage}`);
 
     // Get all repositories for the owner
@@ -92,7 +98,7 @@ async function run() {
     let hasMorePages = true;
     let isOrganization = true;
 
-    while (hasMorePages && (maxRepos === 0 || repositories.length < maxRepos)) {
+    while (hasMorePages && repositories.length < maxRepos) {
       try {
         let response;
         
@@ -140,7 +146,7 @@ async function run() {
           hasMorePages = false;
         } else {
           // Add repositories, respecting max-repos limit
-          const remainingSlots = maxRepos === 0 ? response.data.length : Math.min(response.data.length, maxRepos - repositories.length);
+          const remainingSlots = Math.min(response.data.length, maxRepos - repositories.length);
           const reposToAdd = response.data.slice(0, remainingSlots);
           repositories.push(...reposToAdd);
           
@@ -148,7 +154,7 @@ async function run() {
           if (response.data.length < perPage) {
             // Received fewer repos than requested, likely the last page
             hasMorePages = false;
-          } else if (maxRepos > 0 && repositories.length >= maxRepos) {
+          } else if (repositories.length >= maxRepos) {
             // Reached the max repos limit
             core.info(`Reached max repos limit of ${maxRepos}`);
             hasMorePages = false;
@@ -177,11 +183,6 @@ async function run() {
       default_branch: repo.default_branch,
       private: repo.private
     }));
-
-    // Format and set output for all repositories
-    const formattedRepos = formatRepositories(filteredRepositories, outputFormat);
-    core.setOutput('repositories', formattedRepos);
-    core.setOutput('repository-count', filteredRepositories.length);
 
     // If branch name is specified, search for it
     if (branchName) {
@@ -223,6 +224,10 @@ async function run() {
       const formattedReposWithBranch = formatRepositories(repositoriesWithBranch, outputFormat);
       core.setOutput('repositories-with-branch', formattedReposWithBranch);
       core.setOutput('repositories-with-branch-count', repositoriesWithBranch.length);
+      
+      // When branch-name is provided, the main repositories output should also be filtered to only repos with the branch
+      core.setOutput('repositories', formattedReposWithBranch);
+      core.setOutput('repository-count', repositoriesWithBranch.length);
 
       // Create a summary
       if (repositoriesWithBranch.length > 0) {
@@ -238,6 +243,11 @@ async function run() {
           .write();
       }
     } else {
+      // No branch name specified, output all filtered repositories
+      const formattedRepos = formatRepositories(filteredRepositories, outputFormat);
+      core.setOutput('repositories', formattedRepos);
+      core.setOutput('repository-count', filteredRepositories.length);
+      
       // Create a summary for all repositories
       core.summary
         .addHeading(`All repositories for ${owner}`)
