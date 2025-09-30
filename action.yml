@@ -1,0 +1,29 @@
+name: 'Organization-wide Branch Finder'
+description: 'List all repositories from an owner (user or organization) and optionally search for specific branches'
+author: 'Siavash Namvar'
+
+branding:
+  icon: 'git-branch'
+  color: 'blue'
+
+inputs:
+  owner:
+    description: 'GitHub owner (username or organization name)'
+    required: true
+  token:
+    description: 'GitHub token with repo read access'
+    required: true
+  branch-name:
+    description: 'Optional: Branch name to search for across all repositories'
+    required: false
+    default: ''
+
+outputs:
+  repositories:
+    description: 'JSON array of all repositories found'
+  repositories-with-branch:
+    description: 'JSON array of repositories containing the specified branch (if branch-name is provided)'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
