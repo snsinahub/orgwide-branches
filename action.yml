@@ -1,0 +1,57 @@
+name: 'Organization-wide Branch Finder'
+description: 'List all repositories from an owner (user or organization) and optionally search for specific branches'
+author: 'Siavash Namvar'
+
+branding:
+  icon: 'git-branch'
+  color: 'blue'
+
+inputs:
+  owner:
+    description: 'GitHub owner (username or organization name)'
+    required: true
+  token:
+    description: 'GitHub token with repo read access'
+    required: true
+  branch-name:
+    description: 'Optional: Branch name to search for across all repositories'
+    required: false
+    default: ''
+  output-format:
+    description: 'Output format: json, flat, array, or csv'
+    required: false
+    default: 'json'
+  visibility:
+    description: 'Filter by repository visibility: all, public, private, or internal'
+    required: false
+    default: 'all'
+  include-forks:
+    description: 'Include forked repositories: true, false, or only'
+    required: false
+    default: 'true'
+  max-repos:
+    description: 'Maximum number of repositories to fetch (default: 5000, set to 0 for unlimited)'
+    required: false
+    default: '5000'
+  page:
+    description: 'Page number to start fetching from (for pagination control, default: 1)'
+    required: false
+    default: '1'
+  per-page:
+    description: 'Number of repositories per page (max: 100, default: 100)'
+    required: false
+    default: '100'
+
+outputs:
+  repositories:
+    description: 'Repositories in the specified format (json, flat, array, or csv)'
+  repositories-with-branch:
+    description: 'Repositories with branch in the specified format (if branch-name is provided)'
+  repository-count:
+    description: 'Total count of repositories found'
+  repositories-with-branch-count:
+    description: 'Count of repositories containing the specified branch (if branch-name is provided)'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'

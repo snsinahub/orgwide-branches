@@ -1,0 +1,41 @@
+name: Example - Find Branch
+
+on:
+  workflow_dispatch:
+    inputs:
+      owner:
+        description: 'GitHub owner (username or organization)'
+        required: true
+        default: 'snsinahub'
+      branch_name:
+        description: 'Branch name to search for (leave empty to list all repos)'
+        required: false
+        default: ''
+
+jobs:
+  find-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Find repositories with branch
+        id: find-repos
+        uses: ./
+        with:
+          owner: ${{ github.event.inputs.owner }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch-name: ${{ github.event.inputs.branch_name }}
+
+      - name: Display results
+        run: |
+          echo "## Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -n "${{ github.event.inputs.branch_name }}" ]; then
+            echo "### Repositories with branch '${{ github.event.inputs.branch_name }}'" >> $GITHUB_STEP_SUMMARY
+            echo '${{ steps.find-repos.outputs.repositories-with-branch }}' | jq -r '.[] | "- [\(.full_name)](\(.branch_url))"' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### All Repositories" >> $GITHUB_STEP_SUMMARY
+            echo '${{ steps.find-repos.outputs.repositories }}' | jq -r '.[] | "- [\(.full_name)](\(.url)) - default: \(.default_branch)"' >> $GITHUB_STEP_SUMMARY
+          fi
