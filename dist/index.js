@@ -31846,7 +31846,7 @@ function formatRepositories(repositories, format) {
 
   // CSV value escaping function (defined once, reused for each row)
   const escapeCsv = (value) => {
-    if (value == null) return '';
+    if (value === null || value === undefined) return '';
     const stringValue = String(value);
     if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
       return `"${stringValue.replace(/"/g, '""')}"`;
