@@ -305,7 +305,7 @@ jobs:
           cat repositories.csv
       
       - name: Upload CSV artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: repositories-csv
           path: repositories.csv
