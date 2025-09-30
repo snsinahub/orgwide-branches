@@ -29,6 +29,18 @@ inputs:
     description: 'Include forked repositories: true, false, or only'
     required: false
     default: 'true'
+  max-repos:
+    description: 'Maximum number of repositories to fetch (default: 1000, set to 0 for unlimited)'
+    required: false
+    default: '1000'
+  page:
+    description: 'Page number to start fetching from (for pagination control, default: 1)'
+    required: false
+    default: '1'
+  per-page:
+    description: 'Number of repositories per page (max: 100, default: 100)'
+    required: false
+    default: '100'
 
 outputs:
   repositories:
