@@ -182,7 +182,7 @@ jobs:
 | `output-format` | Output format: `json`, `flat`, `array`, or `csv` | No | `json` |
 | `visibility` | Filter by repository visibility: `all`, `public`, `private`, or `internal` | No | `all` |
 | `include-forks` | Include forked repositories: `true`, `false`, or `only` | No | `true` |
-| `max-repos` | Maximum number of repositories to fetch (set to `0` for unlimited) | No | `1000` |
+| `max-repos` | Maximum number of repositories to fetch (set to `0` for unlimited) | No | `5000` |
 | `page` | Page number to start fetching from (for pagination control) | No | `1` |
 | `per-page` | Number of repositories per page (max: 100) | No | `100` |
 
@@ -499,11 +499,11 @@ For organizations with many repositories, you can control how repositories are f
 
 ### max-repos
 
-Limits the total number of repositories to fetch. Default is `1000`, which is sufficient for most organizations. Set to `0` for unlimited repositories.
+Limits the total number of repositories to fetch. Default is `5000`, which is sufficient for most organizations. Set to `0` for unlimited repositories.
 
 ```yaml
 with:
-  max-repos: 1000  # Fetch up to 1000 repositories
+  max-repos: 5000  # Fetch up to 5000 repositories (default)
   max-repos: 0     # Fetch all repositories (unlimited)
 ```
 
